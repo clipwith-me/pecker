@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pecker — System Architecture & Technical Design</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a2e;background:#f8f9fc;padding:0}
+  .page{max-width:900px;margin:0 auto;padding:48px 32px;background:white;min-height:100vh}
+  h1{font-size:2.4rem;font-weight:800;color:#0D1F52;margin-bottom:4px}
+  h2{font-size:1.3rem;font-weight:700;color:#0D1F52;margin:36px 0 12px;padding-bottom:8px;border-bottom:2px solid #e8eaf0}
+  h3{font-size:1rem;font-weight:700;color:#1a1a2e;margin:16px 0 6px}
+  p,li{font-size:0.92rem;line-height:1.7;color:#3d3d5c}
+  li{margin-left:20px;margin-bottom:4px}
+  .tagline{color:#6b7280;font-size:1rem;margin-bottom:40px}
+  .badge{display:inline-block;background:#0D1F52;color:white;border-radius:99px;padding:2px 12px;font-size:0.75rem;font-weight:600;margin-right:6px;margin-bottom:6px}
+  .badge.green{background:#059669}
+  .badge.amber{background:#d97706}
+  .badge.new{background:#7c3aed}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.88rem}
+  th{background:#0D1F52;color:white;padding:10px 14px;text-align:left;font-weight:600}
+  td{padding:9px 14px;border-bottom:1px solid #e8eaf0;vertical-align:top}
+  tr:nth-child(even) td{background:#f8f9fc}
+  .arch-box{background:#f1f3f8;border:1px solid #d8dce8;border-radius:12px;padding:20px;margin:12px 0}
+  .arch-box code{font-family:monospace;font-size:0.82rem;background:#e8eaf0;border-radius:4px;padding:2px 6px}
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .flow-step{background:#0D1F52;color:white;padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:600}
+  .flow-arrow{color:#6b7280;font-size:1.2rem;font-weight:700}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
+  .card{background:#f8f9fc;border:1px solid #e8eaf0;border-radius:12px;padding:16px}
+  .card h4{font-size:0.9rem;font-weight:700;margin-bottom:8px;color:#0D1F52}
+  .card p,.card li{font-size:0.84rem}
+  .highlight{background:#eef2ff;border-left:4px solid #0D1F52;padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0}
+  @media(max-width:600px){.grid2{grid-template-columns:1fr}}
+  @media print{body{background:white}.page{padding:32px 24px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div style="display:flex;align-items:center;gap:20px;margin-bottom:8px">
+    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
+      <path d="M100 12C68.6 12 43 37.6 43 69c0 42 57 119 57 119s57-77 57-119c0-31.4-25.6-57-57-57z" fill="#0D1F52"/>
+      <path d="M76 68l16 16 34-34" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="68" cy="48" r="5" fill="white"/>
+      <circle cx="88" cy="38" r="3.5" fill="white" opacity="0.8"/>
+      <circle cx="78" cy="30" r="3" fill="white" opacity="0.6"/>
+      <line x1="68" y1="48" x2="88" y2="38" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+      <line x1="88" y1="38" x2="78" y2="30" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    </svg>
+    <div>
+      <h1>Pecker</h1>
+      <div class="tagline">System Architecture &amp; High-Fidelity Technical Design · v2</div>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <strong>Community Incident Management Platform</strong> — Report. Resolve. Improve.<br/>
+    Transforms fragmented community complaints into a structured, trackable, accountable workflow: <em>Report → Triage → Assignment → Resolution → Audit Trail → Closure</em><br/>
+    <strong>Live:</strong> <a href="https://pecker-app.vercel.app" style="color:#0D1F52">pecker-app.vercel.app</a>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>1. Architecture Overview</h2>
+
+  <div class="arch-box">
+    <h3>Deployment Topology</h3>
+    <pre style="font-size:0.8rem;line-height:1.8;color:#1a1a2e;overflow-x:auto">
+┌──────────────────────────────────────────────────────────────┐
+│                      CLIENT LAYER                            │
+│  Mobile Browser (primary) · Tablet · Desktop                 │
+│  Next.js 16 App Router · React 19 · Tailwind CSS v3          │
+│  MapLibre GL JS (vector maps) · TanStack Query v5            │
+└──────────────────┬───────────────────────────────────────────┘
+                   │ HTTPS / JWT Cookie
+┌──────────────────▼───────────────────────────────────────────┐
+│                  APPLICATION LAYER (Vercel)                   │
+│  Next.js 16.2.7 Server (Node.js serverless functions)        │
+│  ├── App Router — SSR pages + RSC + Client components        │
+│  ├── API Routes (/api/*) — 20 REST endpoints                 │
+│  ├── NextAuth v5 — JWT sessions, trustHost, 30-day maxAge    │
+│  └── (app) layout — RBAC auth guard (server-side)            │
+└──────────────────┬───────────────────────────────────────────┘
+         ┌─────────┴──────────┐
+┌────────▼────────┐  ┌────────▼────────────┐
+│   DATA LAYER    │  │   MEDIA STORAGE      │
+│  Neon PostgreSQL│  │  Vercel Blob (prod)  │
+│  Prisma ORM v5  │  │  Local FS (dev)      │
+│  globalThis     │  │  Images + Videos     │
+│  singleton      │  │  50 MB limit         │
+└─────────────────┘  └─────────────────────┘
+         │
+┌────────▼────────────────────────────┐
+│  EXTERNAL FREE APIs (no key needed) │
+│  OpenFreeMap — vector map tiles     │
+│  ESRI World Imagery — satellite     │
+│  Nominatim — reverse geocoding      │
+│  Nominatim — address search         │
+└─────────────────────────────────────┘</pre>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🖥 Frontend Stack</h4>
+      <ul>
+        <li>Next.js 16.2.7 (App Router + RSC)</li>
+        <li>TypeScript — strict mode</li>
+        <li>Tailwind CSS v3.4 + shadcn-style UI</li>
+        <li>TanStack Query v5 (server state)</li>
+        <li>React Hook Form + Zod (forms)</li>
+        <li>MapLibre GL JS (vector maps)</li>
+        <li>MediaRecorder API (video recording)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>⚙️ Backend Stack</h4>
+      <ul>
+        <li>Next.js API Routes (Node.js serverless)</li>
+        <li>NextAuth v5 — Credentials + JWT</li>
+        <li>Prisma ORM v5 — type-safe queries</li>
+        <li>Neon PostgreSQL — serverless Postgres</li>
+        <li>bcryptjs — password hashing (cost=12)</li>
+        <li>Zod — server-side input validation</li>
+        <li>Vercel Blob — media file storage</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>2. Database Schema</h2>
+
+  <table>
+    <tr><th>Table</th><th>Key Fields</th><th>Purpose</th></tr>
+    <tr><td><strong>users</strong></td><td>id, email, name, passwordHash, role (RESIDENT/RESPONDER/ADMIN), phone</td><td>Authentication &amp; RBAC</td></tr>
+    <tr><td><strong>incidents</strong></td><td>id, title, description, category, severity, status, locationLat/Lng/Text, reportedById, assignedToId, resolvedAt, <strong>isAnonymous, guestName</strong></td><td>Core incident record</td></tr>
+    <tr><td><strong>incident_images</strong></td><td>id, incidentId, url, filename, size, <strong>mediaType (image|video)</strong></td><td>Photo &amp; video evidence</td></tr>
+    <tr><td><strong>incident_events</strong></td><td>id, incidentId, actorId, action, note, fromStatus, toStatus</td><td>Immutable audit trail</td></tr>
+    <tr><td><strong>incident_votes</strong></td><td>id, incidentId, userId, createdAt · unique(incidentId, userId)</td><td>Community upvote/+1</td></tr>
+    <tr><td><strong>notifications</strong></td><td>id, userId, incidentId, type, message, read</td><td>In-app notification feed</td></tr>
+  </table>
+
+  <h3>Incident Status Lifecycle</h3>
+  <div class="flow">
+    <span class="flow-step" style="background:#6366f1">NEW</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step" style="background:#f59e0b">ACKNOWLEDGED</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step" style="background:#3b82f6">IN PROGRESS</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step" style="background:#10b981">RESOLVED</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step" style="background:#6b7280">CLOSED</span>
+  </div>
+  <p style="margin-top:6px">All transitions are server-validated against a typed transition map. <strong>REJECTED</strong> is available from NEW or ACKNOWLEDGED. RESOLVED → IN_PROGRESS rollback supported for re-investigation.</p>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>3. API Design</h2>
+
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+    <tr><td>POST</td><td>/api/auth/register</td><td>Public</td><td>User registration — role: RESIDENT or RESPONDER</td></tr>
+    <tr><td>POST</td><td>/api/auth/[...nextauth]</td><td>Public</td><td>JWT login / session management</td></tr>
+    <tr><td>GET</td><td>/api/incidents</td><td>All roles</td><td>Paginated list; residents see own + anonymous; search + filters</td></tr>
+    <tr><td>POST</td><td>/api/incidents</td><td>All / Guest</td><td>Create incident; supports anonymous (no auth required if isAnonymous=true)</td></tr>
+    <tr><td>GET</td><td>/api/incidents/:id</td><td>All roles</td><td>Full detail with timeline, votes, media</td></tr>
+    <tr><td>PATCH</td><td>/api/incidents/:id</td><td>Owner (NEW only)</td><td>Edit title, description, location after submit while status=NEW</td></tr>
+    <tr><td>PATCH</td><td>/api/incidents/:id/status</td><td>Admin/Responder</td><td>State transition with server validation</td></tr>
+    <tr><td>PATCH</td><td>/api/incidents/:id/assign</td><td>Admin/Responder</td><td>Assign to responder</td></tr>
+    <tr><td>POST</td><td>/api/incidents/:id/note</td><td>All roles</td><td>Append note to audit timeline</td></tr>
+    <tr><td>POST</td><td>/api/incidents/:id/escalate</td><td>Admin/Responder</td><td>Escalate to CRITICAL + notify all admins</td></tr>
+    <tr><td>POST</td><td>/api/incidents/:id/vote</td><td>All roles</td><td>Toggle upvote — creates or deletes IncidentVote</td></tr>
+    <tr><td>GET</td><td>/api/map</td><td><strong>Public</strong></td><td>Active incidents with lat/lng for public map (max 500)</td></tr>
+    <tr><td>GET</td><td>/api/incidents/export</td><td>Admin/Responder</td><td>Stream all incidents as CSV download</td></tr>
+    <tr><td>POST</td><td>/api/upload</td><td>All roles</td><td>Image (5 MB) or video (50 MB, webm/mp4) → Vercel Blob</td></tr>
+    <tr><td>GET</td><td>/api/dashboard/stats</td><td>Admin/Responder</td><td>KPIs: open count, resolution rate, avg time, critical count</td></tr>
+    <tr><td>GET/PATCH</td><td>/api/notifications</td><td>All roles</td><td>Notification feed + mark-read</td></tr>
+    <tr><td>GET/PATCH</td><td>/api/users</td><td>Admin</td><td>User list + role promotion</td></tr>
+    <tr><td>POST</td><td>/api/seed</td><td>SEED_SECRET header</td><td>Populate demo data for reviewers</td></tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>4. Map Architecture</h2>
+
+  <div class="highlight">
+    <strong>Technology:</strong> MapLibre GL JS (MIT, free, no API key) + OpenFreeMap vector tiles (unlimited, free) + ESRI World Imagery for satellite.<br/>
+    All map services are <strong>100% free with no usage limits</strong> — chosen after evaluating Google Maps ($7/1k loads), MapTiler (100k/mo cap), and Stadia Maps (200k/mo cap).
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🗺️ Public Map (/map)</h4>
+      <ul>
+        <li>No login required — anyone can view</li>
+        <li>Vector tiles: streets, schools, hospitals, estates, businesses, roads at every zoom (up to z20)</li>
+        <li>4 map styles: Streets, Bright, Minimal, Satellite</li>
+        <li>Incident clustering (supercluster via MapLibre source)</li>
+        <li>Severity-coloured pins: Low/Medium/High/Critical</li>
+        <li>Click pin → popup → public incident detail (/i/[id])</li>
+        <li>Location search via Nominatim (addresses, schools, landmarks)</li>
+        <li>Locate Me, Fullscreen, Scale bar, Navigation controls</li>
+        <li>Logged-in users see Dashboard + Report buttons in header</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>📍 Location Intelligence</h4>
+      <ul>
+        <li>GPS → Nominatim reverse geocode → human address (road, neighbourhood, city, state)</li>
+        <li>Address search → fly-to on map</li>
+        <li>lat/lng stored in DB, text description displayed</li>
+        <li>Default map centre auto-computed from incident cluster centroid</li>
+        <li>Public incident detail page (/i/[id]) — no login required, shows full info + media</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>5. Security Architecture</h2>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🔐 Authentication</h4>
+      <ul>
+        <li>NextAuth v5 with Credentials provider</li>
+        <li>JWT sessions — trustHost: true (Vercel alias support)</li>
+        <li>30-day session maxAge (explicit)</li>
+        <li>bcryptjs cost=12 password hashing</li>
+        <li>Password policy: 8+ chars, uppercase, number</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>🛡 Authorization (RBAC)</h4>
+      <ul>
+        <li><strong>RESIDENT</strong> — report incidents, view own, upvote, edit while NEW</li>
+        <li><strong>RESPONDER</strong> — manage all incidents, assign, escalate, export CSV</li>
+        <li><strong>ADMIN</strong> — everything + user management + dashboard stats</li>
+        <li>Role checked server-side on every protected API route</li>
+        <li>(app) layout enforces auth at the Next.js server level</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>✅ Input Validation</h4>
+      <ul>
+        <li>Zod schemas on all API inputs (server-side)</li>
+        <li>React Hook Form + Zod on all UI forms (client-side)</li>
+        <li>File type whitelist (JPEG/PNG/WebP + MP4/WebM/MOV)</li>
+        <li>5 MB image / 50 MB video hard limits</li>
+        <li>Parameterised queries via Prisma (SQL injection proof)</li>
+        <li>Anonymous reports validated (guestName required)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>📋 Audit Trail</h4>
+      <ul>
+        <li>Every status change, assignment, escalation and note logged</li>
+        <li>Immutable event log — append-only, never deleted</li>
+        <li>Actor + timestamp on every event</li>
+        <li>Visible to all stakeholders in the incident timeline</li>
+        <li>Anonymous reports flagged but still audited server-side</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>6. Feature Checklist</h2>
+
+  <table>
+    <tr><th>Feature</th><th>Status</th><th>Notes</th></tr>
+    <tr><td>Mobile-first incident reporting (≤60s)</td><td><span class="badge green">✓ Built</span></td><td>5-step wizard: category → details → location → media → review</td></tr>
+    <tr><td>Role selection on registration</td><td><span class="badge green">✓ Built</span></td><td>Visual two-button selector: Resident vs Responder with icons</td></tr>
+    <tr><td>Issue category selection</td><td><span class="badge green">✓ Built</span></td><td>8 categories with icons, tap-to-select grid</td></tr>
+    <tr><td>AI category suggestion</td><td><span class="badge green">✓ Built</span></td><td>Keyword scoring on incident title → suggests best category inline</td></tr>
+    <tr><td>Photo attachment</td><td><span class="badge green">✓ Built</span></td><td>Up to 3 photos, camera capture on mobile, 5 MB limit, Vercel Blob</td></tr>
+    <tr><td>Video recording</td><td><span class="badge green">✓ Built</span></td><td>Live camera preview while recording, 30s max, MediaRecorder API, webm</td></tr>
+    <tr><td>Media visible to responders</td><td><span class="badge green">✓ Built</span></td><td>Photos and videos displayed on incident detail for all roles</td></tr>
+    <tr><td>GPS location capture</td><td><span class="badge green">✓ Built</span></td><td>Browser geolocation → Nominatim reverse geocode → human address</td></tr>
+    <tr><td>Anonymous reporting</td><td><span class="badge green">✓ Built</span></td><td>Toggle on reporting form; guest system user handles FK constraint</td></tr>
+    <tr><td>Edit after submit</td><td><span class="badge green">✓ Built</span></td><td>Inline edit of title/description/location while status=NEW</td></tr>
+    <tr><td>Severity/priority tagging</td><td><span class="badge green">✓ Built</span></td><td>Low/Medium/High/Critical with visual differentiation</td></tr>
+    <tr><td>Community upvoting (+1 affected)</td><td><span class="badge green">✓ Built</span></td><td>Toggle vote per user; real-time count on cards and detail page</td></tr>
+    <tr><td>SLA / overdue timers</td><td><span class="badge green">✓ Built</span></td><td>getSlaStatus() on incident cards: ok / warning / overdue badges</td></tr>
+    <tr><td>Public incident map (no login)</td><td><span class="badge green">✓ Built</span></td><td>MapLibre GL + OpenFreeMap vector tiles; clustering; 4 styles; search</td></tr>
+    <tr><td>Public incident detail (no login)</td><td><span class="badge green">✓ Built</span></td><td>/i/[id] — shows full details, media, vote count; CTA to sign up</td></tr>
+    <tr><td>Auto-routing notification</td><td><span class="badge green">✓ Built</span></td><td>Admins notified on every new report; all notified on escalation</td></tr>
+    <tr><td>Full incident lifecycle states</td><td><span class="badge green">✓ Built</span></td><td>NEW → ACKNOWLEDGED → IN_PROGRESS → RESOLVED → CLOSED/REJECTED</td></tr>
+    <tr><td>Status transition validation</td><td><span class="badge green">✓ Built</span></td><td>Server-enforced typed transition graph</td></tr>
+    <tr><td>Escalation controls</td><td><span class="badge green">✓ Built</span></td><td>One-click escalate to CRITICAL, notifies all admins/responders</td></tr>
+    <tr><td>Progress tracking (reporter view)</td><td><span class="badge green">✓ Built</span></td><td>Real-time status + full activity timeline visible to reporter</td></tr>
+    <tr><td>Admin dashboard with KPIs</td><td><span class="badge green">✓ Built</span></td><td>Open count, resolved today, avg resolution time, critical incidents</td></tr>
+    <tr><td>CSV export</td><td><span class="badge green">✓ Built</span></td><td>Streaming CSV of all incidents — Admin/Responder only</td></tr>
+    <tr><td>Incident queue with filters</td><td><span class="badge green">✓ Built</span></td><td>Filter by status, category, severity; full-text search (case-insensitive)</td></tr>
+    <tr><td>Team assignment</td><td><span class="badge green">✓ Built</span></td><td>Assign incidents to responders with notification</td></tr>
+    <tr><td>Notification system</td><td><span class="badge green">✓ Built</span></td><td>In-app feed, badge counter, mark-all-read</td></tr>
+    <tr><td>Audit trail / activity log</td><td><span class="badge green">✓ Built</span></td><td>Every action logged: actor, action, timestamp, note</td></tr>
+    <tr><td>User management + RBAC</td><td><span class="badge green">✓ Built</span></td><td>Admin promotes users to Responder/Admin via dropdown</td></tr>
+    <tr><td>Test suite</td><td><span class="badge green">✓ Built</span></td><td>37+ passing Jest unit/integration tests</td></tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>7. Folder Structure</h2>
+  <div class="arch-box">
+    <pre style="font-size:0.78rem;line-height:1.7;overflow-x:auto">
+src/
+├── app/
+│   ├── (app)/                    # Authenticated routes — layout enforces auth
+│   │   ├── admin/                # Dashboard + User management (Admin/Responder)
+│   │   ├── incidents/            # List, detail, new report (5-step wizard)
+│   │   ├── notifications/        # Notification feed
+│   │   └── profile/              # User profile + sign-out
+│   ├── api/
+│   │   ├── auth/                 # NextAuth handler + registration
+│   │   ├── incidents/
+│   │   │   ├── route.ts          # GET list / POST create (+ anonymous support)
+│   │   │   ├── export/route.ts   # GET CSV stream (admin/responder)
+│   │   │   └── [id]/
+│   │   │       ├── route.ts      # GET detail / PATCH edit
+│   │   │       ├── status/       # PATCH — lifecycle transitions
+│   │   │       ├── assign/       # PATCH — assign to responder
+│   │   │       ├── escalate/     # POST — bump to CRITICAL
+│   │   │       ├── note/         # POST — append audit note
+│   │   │       └── vote/         # POST — toggle upvote
+│   │   ├── map/route.ts          # GET public incidents for map
+│   │   ├── dashboard/stats/      # GET KPI aggregates (admin)
+│   │   ├── notifications/        # GET list / PATCH mark-read
+│   │   ├── upload/               # POST — Vercel Blob / local FS
+│   │   ├── users/                # GET + PATCH (admin role management)
+│   │   └── seed/                 # POST — demo data
+│   ├── map/                      # Public map page (no login required)
+│   ├── i/[id]/                   # Public incident detail (no login required)
+│   ├── deliverables/             # Product docs hub
+│   ├── login/ register/          # Auth pages
+│   └── layout.tsx / page.tsx     # Root layout + smart redirect
+├── components/
+│   ├── ui/                       # Design system primitives + PeckerLogo SVG
+│   ├── incidents/                # IncidentCard (SLA badge, vote count), StatusBadge
+│   ├── map/
+│   │   ├── incident-map.tsx      # MapLibre GL map component (SSR-safe dynamic import)
+│   │   └── map-legend.tsx        # Standalone legend (no Leaflet deps)
+│   └── layout/                   # Sidebar, BottomNav, TopBar, Providers
+├── lib/
+│   ├── auth.ts                   # NextAuth config (trustHost, JWT, RBAC callbacks)
+│   ├── db.ts                     # Prisma singleton (globalThis pattern)
+│   ├── types.ts                  # Enums, constants, getSlaStatus(), suggestCategory()
+│   ├── utils.ts                  # cn(), formatDateTime(), formatRelativeTime()
+│   └── validations.ts            # Zod schemas for every API input
+├── hooks/                        # useToast, useIncidents, useNotifications
+└── __tests__/                    # 37+ Jest unit + integration tests</pre>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>8. Key Architectural Decisions</h2>
+
+  <table>
+    <tr><th>Decision</th><th>Why</th></tr>
+    <tr><td>Prisma enums → String fields</td><td>Avoids enum migration friction on Neon; Zod enforces valid values at the API boundary</td></tr>
+    <tr><td>globalThis Prisma singleton</td><td>Prevents connection pool exhaustion during Next.js hot-reload in development</td></tr>
+    <tr><td>MapLibre GL + OpenFreeMap (not Google Maps)</td><td>Unlimited free usage, no API key, MIT licence, vector tiles with full POI/label detail</td></tr>
+    <tr><td>Nominatim for geocoding (not Google Places)</td><td>Free, no key, adequate quality for community incident addresses</td></tr>
+    <tr><td>Anonymous system user pattern</td><td>getOrCreateAnonymousUser() satisfies the reportedById FK constraint without nullable foreign key migration</td></tr>
+    <tr><td>trustHost: true on NextAuth</td><td>Required for Vercel alias URLs — without it, session cookies are rejected on the aliased domain</td></tr>
+    <tr><td>Public routes outside (app) group</td><td>/map and /i/[id] are outside the (app) auth guard; logged-in users get contextual nav via useSession</td></tr>
+    <tr><td>MediaRecorder with live preview</td><td>srcObject on a &lt;video&gt; element streams camera feed in real-time during recording</td></tr>
+    <tr><td>Next.js 16.2.7 pinned</td><td>Earlier versions blocked by Vercel CVE policy; v17+ not yet stable</td></tr>
+    <tr><td>Tailwind v3 pinned</td><td>v4 is PostCSS-incompatible with all v3 component patterns used in the design system</td></tr>
+    <tr><td>useForm&lt;any&gt; for Zod .default() forms</td><td>Zod input/output type mismatch breaks the Resolver generic; &lt;any&gt; is the documented workaround</td></tr>
+    <tr><td>dynamic import renamed to lazyLoad</td><td>Avoids name collision with Next.js export const dynamic = "force-dynamic" on the same page</td></tr>
+  </table>
+
+  <div style="margin-top:48px;padding-top:24px;border-top:1px solid #e8eaf0;text-align:center;color:#9ca3af;font-size:0.8rem">
+    Pecker Community Incident Management Platform · v2 · 2026 · <a href="https://pecker-app.vercel.app" style="color:#9ca3af">pecker-app.vercel.app</a>
+  </div>
+</div>
+</body>
+</html>

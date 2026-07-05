@@ -1,0 +1,127 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("RESIDENT")
+  phone        String?
+  city         String?
+  community    String?
+  state        String?
+  country      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reportedIncidents  Incident[]      @relation("Reporter")
+  assignedIncidents  Incident[]      @relation("Assignee")
+  incidentEvents     IncidentEvent[]
+  notifications      Notification[]
+  votes              IncidentVote[]
+
+  @@map("users")
+}
+
+model Incident {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  category     String
+  severity     String    @default("MEDIUM")
+  status       String    @default("NEW")
+
+  locationLat  Float?
+  locationLng  Float?
+  locationText String?
+  city         String?
+  community    String?
+  state        String?
+  country      String?
+
+  isAnonymous  Boolean   @default(false)
+  guestName    String?
+
+  reportedById String
+  assignedToId String?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  resolvedAt   DateTime?
+  closedAt     DateTime?
+
+  reportedBy   User            @relation("Reporter", fields: [reportedById], references: [id])
+  assignedTo   User?           @relation("Assignee", fields: [assignedToId], references: [id])
+  images       IncidentImage[]
+  events       IncidentEvent[]
+  notifications Notification[]
+  votes        IncidentVote[]
+
+  @@map("incidents")
+}
+
+model IncidentImage {
+  id         String   @id @default(cuid())
+  incidentId String
+  url        String
+  filename   String
+  size       Int
+  mediaType  String   @default("image")
+  createdAt  DateTime @default(now())
+
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@map("incident_images")
+}
+
+model IncidentEvent {
+  id         String   @id @default(cuid())
+  incidentId String
+  actorId    String?
+  action     String
+  note       String?
+  fromStatus String?
+  toStatus   String?
+  createdAt  DateTime @default(now())
+
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  actor      User?    @relation(fields: [actorId], references: [id])
+
+  @@map("incident_events")
+}
+
+model IncidentVote {
+  id         String   @id @default(cuid())
+  incidentId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([incidentId, userId])
+  @@map("incident_votes")
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  incidentId String?
+  type       String
+  message    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  incident   Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
