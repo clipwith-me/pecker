@@ -9,6 +9,7 @@ import {
   TrendingUp,
   ArrowRight,
   Download,
+  Flag,
 } from "lucide-react";
 import Link from "next/link";
 import { TopBar } from "@/components/layout/top-bar";
@@ -29,6 +30,17 @@ const STATUS_BAR_COLORS: Record<string, string> = {
 
 export default function AdminDashboardPage() {
   const { data: session, status } = useSession();
+
+  const { data: flaggedData } = useQuery<IncidentListItem[]>({
+    queryKey: ["flagged-incidents"],
+    queryFn: async () => {
+      const res = await fetch("/api/incidents?flagged=true&pageSize=10");
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      return json.data.items ?? [];
+    },
+    enabled: !!session && session.user.role === "ADMIN",
+  });
 
   const { data, isLoading } = useQuery<DashboardStats>({
     queryKey: ["dashboard-stats"],
@@ -151,6 +163,23 @@ export default function AdminDashboardPage() {
                 ))}
               </CardContent>
             </Card>
+
+            {flaggedData && flaggedData.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Flag className="h-4 w-4 text-red-500" />
+                  <h3 className="font-semibold text-red-700">Flagged Reports ({flaggedData.length})</h3>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-3 mb-1">
+                  <p className="text-xs text-red-600">These incidents were flagged by community members as potentially false. Review and reject if confirmed.</p>
+                </div>
+                <div className="space-y-3">
+                  {flaggedData.map((incident) => (
+                    <IncidentCard key={incident.id} incident={incident as IncidentListItem} showReporter />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {data.recentIncidents.length > 0 && (
               <div>

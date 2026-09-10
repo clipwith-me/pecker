@@ -88,7 +88,7 @@ export default function LoginPage() {
 
         {/* Bottom tagline */}
         <p className="relative z-10 text-white/30 text-xs">
-          © 2026 Pecker · Community Incident Platform
+          © 2026 Pecker · Nigeria&apos;s Nationwide Safety Platform
         </p>
       </div>
 

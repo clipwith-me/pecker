@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: { default: "Pecker — Report. Resolve. Improve.", template: "%s | Pecker" },
-  description: "Community Incident Management Platform — transform fragmented community complaints into structured, trackable, accountable workflows.",
+  description: "Nigeria's Nationwide Incident Reporting Platform — report security threats, flooding, and hazards across all 36 states. Real-time, free, and community-powered.",
   icons: { icon: "/logo.svg" },
 };
 

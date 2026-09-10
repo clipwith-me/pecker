@@ -17,13 +17,17 @@ export default function PublicMapPage() {
   const [incidents, setIncidents] = useState<MapIncident[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchIncidents = () =>
     fetch("/api/map")
       .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setIncidents(json.data);
-      })
+      .then((json) => { if (json.success) setIncidents(json.data); })
       .finally(() => setLoading(false));
+
+  useEffect(() => {
+    fetchIncidents();
+    const interval = setInterval(fetchIncidents, 30_000); // refresh every 30 s
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Default to world view (Africa-centered) so anyone can search any location
@@ -65,6 +69,10 @@ export default function PublicMapPage() {
         <div className="flex flex-col items-center text-center min-w-0">
           <span className="text-xs font-medium text-gray-700 truncate">
             {loading ? "Loading…" : `${counts.total} active`}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            Live
           </span>
           {counts.critical > 0 && (
             <span className="text-xs text-red-600 font-semibold">{counts.critical} critical</span>

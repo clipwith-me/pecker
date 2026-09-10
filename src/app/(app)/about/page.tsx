@@ -17,7 +17,7 @@ export default function AboutPage() {
         <div className="flex flex-col items-center py-6 text-center">
           <PeckerLogo size="xl" showTagline className="flex-col items-center mb-3" />
           <p className="text-muted-foreground text-sm mt-2 max-w-sm">
-            Community Incident Management Platform — transforming fragmented complaints into structured, trackable, accountable workflows.
+            Nigeria&apos;s Nationwide Incident Reporting Platform — reporting security threats, flooding, and hazards across all 36 states. Real-time, free, and community-powered.
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export default function AboutPage() {
         </section>
 
         <div className="text-center text-xs text-muted-foreground pt-2">
-          Community Incident Management · {new Date().getFullYear()}
+          Nigeria&apos;s Nationwide Safety Platform · {new Date().getFullYear()}
         </div>
       </div>
     </div>

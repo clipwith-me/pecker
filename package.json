@@ -76,6 +76,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@xmldom/xmldom": "^0.9.12",
     "babel-jest": "^29.7.0",
     "eslint": "^9.17.0",
     "eslint-config-next": "^16.2.7",

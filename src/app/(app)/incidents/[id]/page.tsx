@@ -12,6 +12,8 @@ import {
   UserCheck,
   AlertOctagon,
   ThumbsUp,
+  ThumbsDown,
+  Flag,
   Pencil,
   X,
 } from "lucide-react";
@@ -29,7 +31,7 @@ import {
   STATUS_LABELS,
   getSlaStatus,
 } from "@/lib/types";
-import type { IncidentWithRelations, IncidentStatus } from "@/lib/types";
+import type { IncidentWithRelations, IncidentStatus, VoteType } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +45,10 @@ export default function IncidentDetailPage() {
   const [showStatusPanel, setShowStatusPanel] = useState(false);
   const [voteCount, setVoteCount] = useState(0);
   const [userVoted, setUserVoted] = useState(false);
+  const [confirmCount, setConfirmCount] = useState(0);
+  const [disputeCount, setDisputeCount] = useState(0);
+  const [userVote, setUserVote] = useState<VoteType | null>(null);
+  const [isFlagged, setIsFlagged] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -62,6 +68,10 @@ export default function IncidentDetailPage() {
     if (incident) {
       setVoteCount(incident.voteCount ?? 0);
       setUserVoted(incident.userVoted ?? false);
+      setConfirmCount(incident.confirmCount ?? 0);
+      setDisputeCount(incident.disputeCount ?? 0);
+      setUserVote(incident.userVote ?? null);
+      setIsFlagged(incident.flagged ?? false);
       setEditTitle(incident.title);
       setEditDesc(incident.description ?? "");
       setEditLocation(incident.locationText ?? "");
@@ -109,16 +119,24 @@ export default function IncidentDetailPage() {
   });
 
   const voteMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/incidents/${id}/vote`, { method: "POST" });
+    mutationFn: async (type: VoteType) => {
+      const res = await fetch(`/api/incidents/${id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
-      return json.data;
+      return json.data as { confirms: number; disputes: number; userVote: VoteType | null };
     },
-    onSuccess: (data: { voted: boolean; voteCount: number }) => {
-      setVoteCount(data.voteCount);
-      setUserVoted(data.voted);
+    onSuccess: (data) => {
+      setConfirmCount(data.confirms);
+      setDisputeCount(data.disputes);
+      setUserVote(data.userVote);
+      setVoteCount(data.confirms + data.disputes);
+      setIsFlagged(data.disputes >= 3 && data.confirms === 0);
     },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
 
   const editMutation = useMutation({
@@ -302,28 +320,56 @@ export default function IncidentDetailPage() {
             )}
           </div>
 
-          {/* Upvote */}
-          <div className="border-t border-border pt-3 mt-3">
-            <button
-              onClick={() => voteMutation.mutate()}
-              disabled={voteMutation.isPending}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all",
-                userVoted
-                  ? "border-blue-400 bg-blue-50 text-blue-700"
-                  : "border-border bg-background text-muted-foreground hover:border-blue-300 hover:text-blue-600"
-              )}
-            >
-              <ThumbsUp className={cn("h-4 w-4", userVoted && "fill-current")} />
-              {userVoted ? "You're affected" : "I'm affected too"}
-              {voteCount > 0 && (
-                <span className="ml-1 bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full">
-                  {voteCount}
-                </span>
-              )}
-            </button>
-            {voteCount > 1 && (
-              <p className="text-xs text-muted-foreground mt-1.5">{voteCount} people report being affected</p>
+          {/* Community verification */}
+          <div className="border-t border-border pt-3 mt-3 space-y-2">
+            {isFlagged && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2 mb-2">
+                <Flag className="h-4 w-4 text-red-500 shrink-0" />
+                <p className="text-xs text-red-700 font-medium">This report has been flagged for review — multiple community members questioned its accuracy.</p>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Community Verification</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => voteMutation.mutate("CONFIRM")}
+                disabled={voteMutation.isPending || session?.user?.id === incident.reportedById}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all",
+                  userVote === "CONFIRM"
+                    ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                    : "border-border bg-background text-muted-foreground hover:border-emerald-300 hover:text-emerald-600"
+                )}
+              >
+                <ThumbsUp className={cn("h-3.5 w-3.5", userVote === "CONFIRM" && "fill-current")} />
+                Confirm
+                {confirmCount > 0 && (
+                  <span className="bg-emerald-100 text-emerald-700 text-xs px-1.5 py-0.5 rounded-full">{confirmCount}</span>
+                )}
+              </button>
+              <button
+                onClick={() => voteMutation.mutate("DISPUTE")}
+                disabled={voteMutation.isPending || session?.user?.id === incident.reportedById}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all",
+                  userVote === "DISPUTE"
+                    ? "border-red-400 bg-red-50 text-red-700"
+                    : "border-border bg-background text-muted-foreground hover:border-red-300 hover:text-red-600"
+                )}
+              >
+                <ThumbsDown className={cn("h-3.5 w-3.5", userVote === "DISPUTE" && "fill-current")} />
+                Dispute
+                {disputeCount > 0 && (
+                  <span className="bg-red-100 text-red-700 text-xs px-1.5 py-0.5 rounded-full">{disputeCount}</span>
+                )}
+              </button>
+            </div>
+            {session?.user?.id === incident.reportedById && (
+              <p className="text-xs text-muted-foreground">You cannot verify your own report.</p>
+            )}
+            {(confirmCount > 0 || disputeCount > 0) && (
+              <p className="text-xs text-muted-foreground">
+                {confirmCount} confirmed · {disputeCount} disputed
+              </p>
             )}
           </div>
         </div>

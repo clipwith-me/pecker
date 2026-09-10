@@ -13,6 +13,7 @@ const FULL_INCIDENT_SELECT = {
   locationText: true,
   locationLat: true,
   locationLng: true,
+  flagged: true,
   isAnonymous: true,
   guestName: true,
   createdAt: true,
@@ -24,7 +25,7 @@ const FULL_INCIDENT_SELECT = {
   reportedBy: { select: { id: true, name: true, email: true, phone: true } },
   assignedTo: { select: { id: true, name: true, email: true } },
   images: true,
-  votes: { select: { userId: true } },
+  votes: { select: { userId: true, type: true } },
   events: {
     select: {
       id: true,
@@ -66,8 +67,12 @@ export async function GET(
 
   const voteCount = incident._count?.votes ?? 0;
   const userVoted = session ? incident.votes.some((v: { userId: string }) => v.userId === session.user.id) : false;
+  const confirmCount = incident.votes.filter((v: { type: string }) => v.type === "CONFIRM").length;
+  const disputeCount = incident.votes.filter((v: { type: string }) => v.type === "DISPUTE").length;
+  const userVoteRecord = session ? incident.votes.find((v: { userId: string }) => v.userId === session.user.id) : null;
+  const userVote = userVoteRecord ? (userVoteRecord as { type: string }).type : null;
 
-  return NextResponse.json({ success: true, data: { ...incident, voteCount, userVoted } });
+  return NextResponse.json({ success: true, data: { ...incident, voteCount, userVoted, confirmCount, disputeCount, userVote } });
 }
 
 export async function PATCH(

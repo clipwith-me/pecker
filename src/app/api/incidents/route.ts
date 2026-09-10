@@ -24,6 +24,7 @@ const INCIDENT_LIST_SELECT = {
   description: true,
   reportedById: true,
   assignedToId: true,
+  flagged: true,
   isAnonymous: true,
   guestName: true,
   reportedBy: { select: { id: true, name: true, email: true } },
@@ -73,6 +74,7 @@ export async function GET(req: Request) {
   if (filters.status) where.status = filters.status;
   if (filters.category) where.category = filters.category;
   if (filters.severity) where.severity = filters.severity;
+  if (searchParams.get("flagged") === "true") where.flagged = true;
   if (filters.search) {
     const searchOr = [
       { title: { contains: filters.search, mode: "insensitive" } },

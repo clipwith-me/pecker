@@ -47,6 +47,7 @@ model Incident {
   state        String?
   country      String?
 
+  flagged      Boolean   @default(false)
   isAnonymous  Boolean   @default(false)
   guestName    String?
 
@@ -102,6 +103,7 @@ model IncidentVote {
   id         String   @id @default(cuid())
   incidentId String
   userId     String
+  type       String   @default("CONFIRM")
   createdAt  DateTime @default(now())
 
   incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)

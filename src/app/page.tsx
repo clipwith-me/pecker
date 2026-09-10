@@ -48,10 +48,10 @@ export default async function RootPage() {
           </div>
           <h1 className="text-4xl sm:text-5xl font-black leading-tight mb-5">
             Know what&apos;s happening<br />
-            <span className="text-blue-300">in your community.</span>
+            <span className="text-blue-300">anywhere in Nigeria.</span>
           </h1>
           <p className="text-blue-100 text-lg leading-relaxed mb-8 max-w-xl mx-auto">
-            Check the live incident map before you travel. Report security threats, infrastructure failures, and community issues — tracked, assigned, and resolved. Not buried in a WhatsApp group.
+            Check the live incident map before you travel — across any state, city, or road in Nigeria. Report security threats, flooding, infrastructure failures, and hazards — tracked, assigned, and resolved. Not buried in a WhatsApp group.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/register" className="inline-flex items-center justify-center gap-2 bg-white text-[#0D1F52] font-bold px-7 py-3.5 rounded-2xl hover:bg-blue-50 transition-colors text-sm">
@@ -223,7 +223,7 @@ export default async function RootPage() {
       <section className="max-w-4xl mx-auto px-5 py-16">
         <p className="text-[#0D1F52] text-xs font-bold uppercase tracking-widest text-center mb-2">Safety intelligence</p>
         <h2 className="text-2xl sm:text-3xl font-black text-gray-900 text-center mb-4">
-          Insecurity is a community problem.<br className="hidden sm:block" /> Pecker makes it visible.
+          Insecurity is a national problem.<br className="hidden sm:block" /> Pecker makes it visible across Nigeria.
         </h2>
         <p className="text-gray-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
           When incidents are reported openly and tracked publicly, communities become harder targets. People plan smarter, respond faster, and hold authorities accountable.
@@ -265,7 +265,7 @@ export default async function RootPage() {
         <div className="max-w-4xl mx-auto">
           <p className="text-blue-300 text-xs font-bold uppercase tracking-widest text-center mb-2">What Pecker gives you</p>
           <h2 className="text-2xl sm:text-3xl font-black text-center mb-10">
-            Everything a community needs. Nothing it doesn&apos;t.
+            Everything Nigeria needs. Nothing it doesn&apos;t.
           </h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
@@ -385,7 +385,7 @@ export default async function RootPage() {
             Built in the open. Free forever.
           </h2>
           <p className="text-gray-500 leading-relaxed mb-8 max-w-xl mx-auto">
-            Pecker is fully open source — the entire codebase is publicly available on GitHub. No subscriptions, no paywalls, no hidden fees. If Pecker helps your community, consider supporting the infrastructure that keeps it running.
+            Pecker is fully open source — the entire codebase is publicly available on GitHub. No subscriptions, no paywalls, no hidden fees. If Pecker helps keep Nigerians safe, consider supporting the infrastructure that keeps it running.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
@@ -409,7 +409,7 @@ export default async function RootPage() {
       {/* ── CTA ─────────────────────────────────── */}
       <section className="max-w-3xl mx-auto px-5 py-16 text-center">
         <h2 className="text-2xl font-black text-gray-900 mb-3">Ready to get started?</h2>
-        <p className="text-gray-500 text-sm mb-8 max-w-md mx-auto">Join your community on Pecker — free for every resident, responder, and administrator.</p>
+        <p className="text-gray-500 text-sm mb-8 max-w-md mx-auto">Join Nigerians across all 36 states on Pecker — free for every resident, responder, and administrator.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/register" className="inline-flex items-center justify-center gap-2 bg-[#0D1F52] text-white font-bold px-8 py-3.5 rounded-2xl hover:bg-[#0D1F52]/90 transition-colors text-sm">
             Create free account <ArrowRight className="h-4 w-4" />
@@ -423,7 +423,7 @@ export default async function RootPage() {
       {/* ── FOOTER ──────────────────────────────── */}
       <footer className="border-t border-gray-100 bg-gray-50 px-5 py-8 text-center">
         <PeckerLogo variant="default" size="sm" className="justify-center mb-3" />
-        <p className="text-xs text-gray-400">Community Incident Management Platform · Report. Resolve. Improve.</p>
+        <p className="text-xs text-gray-400">Nigeria&apos;s Nationwide Incident Reporting Platform · Report. Resolve. Improve.</p>
         <div className="flex justify-center gap-4 mt-3 flex-wrap">
           <Link href="/map" className="text-xs text-gray-400 hover:text-gray-700 transition-colors">Public Map</Link>
           <Link href="/support" className="text-xs text-rose-400 hover:text-rose-600 transition-colors">♥ Support</Link>

@@ -504,6 +504,10 @@ export default function NewIncidentPage() {
               <h2 className="text-xl font-bold mb-1">Review & Submit</h2>
               <p className="text-muted-foreground text-sm mb-4">Confirm your incident report</p>
             </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <p className="text-xs font-semibold text-amber-800 mb-0.5">⚠️ Accuracy matters</p>
+              <p className="text-xs text-amber-700">Submitting a false or misleading report wastes emergency resources and erodes community trust. Community members can dispute reports — repeatedly flagged reports may result in account suspension.</p>
+            </div>
             <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{CATEGORY_ICONS[selectedCategory as keyof typeof CATEGORY_ICONS]}</span>

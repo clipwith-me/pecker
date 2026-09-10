@@ -23,7 +23,7 @@ const roleOptions = [
     value: "RESPONDER",
     icon: ShieldCheck,
     label: "Responder",
-    sub: "Manage and resolve community incidents",
+    sub: "Manage and resolve incidents across Nigeria",
   },
 ];
 
@@ -109,7 +109,7 @@ export default function RegisterPage() {
           ))}
         </div>
 
-        <p className="relative z-10 text-white/30 text-xs">© 2026 Pecker · Community Incident Platform</p>
+        <p className="relative z-10 text-white/30 text-xs">© 2026 Pecker · Nigeria&apos;s Nationwide Safety Platform</p>
       </div>
 
       {/* ── Right panel — form ── */}

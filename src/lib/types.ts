@@ -22,6 +22,8 @@ export type SafeUser = Omit<User, "passwordHash">;
 
 export type IncidentMedia = IncidentImage & { mediaType: string };
 
+export type VoteType = "CONFIRM" | "DISPUTE";
+
 export type IncidentWithRelations = Incident & {
   reportedBy: SafeUser;
   assignedTo: SafeUser | null;
@@ -30,6 +32,10 @@ export type IncidentWithRelations = Incident & {
   _count?: { events: number };
   voteCount: number;
   userVoted: boolean;
+  confirmCount: number;
+  disputeCount: number;
+  userVote: VoteType | null;
+  flagged: boolean;
 };
 
 export type IncidentListItem = Incident & {
