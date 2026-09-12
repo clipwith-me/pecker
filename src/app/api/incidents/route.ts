@@ -51,9 +51,7 @@ export async function GET(req: Request) {
 
   const where: Record<string, unknown> = {};
 
-  if (session.user.role === "RESIDENT") {
-    where.reportedById = session.user.id;
-  }
+  // Residents see all incidents (community feed); they can only manage their own
 
   // Geo-scoping for responders: only see incidents in their city/community
   // Old incidents (no city set) remain visible to all responders per policy
