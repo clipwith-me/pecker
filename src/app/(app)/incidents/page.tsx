@@ -54,7 +54,7 @@ export default function IncidentsPage() {
   return (
     <div className="flex flex-col">
       <TopBar
-        title={isAdmin ? "All Incidents" : "My Incidents"}
+        title="Incidents"
         actions={
           <Link href="/incidents/new">
             <Button size="sm" className="gap-1.5 hidden sm:flex">
