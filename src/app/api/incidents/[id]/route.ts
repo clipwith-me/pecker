@@ -61,9 +61,7 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Incident not found" }, { status: 404 });
   }
 
-  if (session.user.role === "RESIDENT" && incident.reportedById !== session.user.id) {
-    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-  }
+  // Residents can view any incident (community feed); edit/delete is restricted separately
 
   const voteCount = incident._count?.votes ?? 0;
   const userVoted = session ? incident.votes.some((v: { userId: string }) => v.userId === session.user.id) : false;
